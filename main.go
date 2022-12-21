@@ -5,15 +5,17 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/launchdarkly/go-sdk-common.v2/lduser"
-	ld "gopkg.in/launchdarkly/go-server-sdk.v5"
+	"github.com/launchdarkly/go-sdk-common/v3/ldcontext"
+	ld "github.com/launchdarkly/go-server-sdk/v6"
 )
 
 // Set sdkKey to your LaunchDarkly SDK key.
 const sdkKey = ""
 
 // Set featureFlagKey to the feature flag key you want to evaluate.
-const featureFlagKey = "my-boolean-flag"
+const featureFlagKey = "limsRoute"
+
+var ldConfig ld.Config
 
 func showMessage(s string) { fmt.Printf("*** %s\n\n", s) }
 
@@ -22,8 +24,8 @@ func main() {
 		showMessage("Please edit main.go to set sdkKey to your LaunchDarkly SDK key first")
 		os.Exit(1)
 	}
-
-	ldClient, _ := ld.MakeClient(sdkKey, 5*time.Second)
+	//ldConfig.Offline = true
+	ldClient, _ := ld.MakeCustomClient(sdkKey, ldConfig, 5*time.Second)
 	if ldClient.Initialized() {
 		showMessage("SDK successfully initialized!")
 	} else {
@@ -33,11 +35,13 @@ func main() {
 
 	// Set up the user properties. This user should appear on your LaunchDarkly users dashboard
 	// soon after you run the demo.
-	user := lduser.NewUserBuilder("example-user-key").
-		Name("Sandy").
-		Build()
 
-	flagValue, err := ldClient.BoolVariation(featureFlagKey, user, false)
+	// context-based request (new in v6)
+	context := ldcontext.New("whatev")
+	// user-based anonymous request - doesnt make a user in LD upon request. without Anonymous(true) it does do this, which isnt appropriate for requests from a backend service
+	//user := ldcontext.New("whatev").Name("ensemble").Anonymous(true).Build()
+
+	flagValue, err := ldClient.BoolVariation(featureFlagKey, context, false)
 	if err != nil {
 		showMessage("error: " + err.Error())
 	}
